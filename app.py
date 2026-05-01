@@ -30,7 +30,7 @@ st.markdown(hide_st_style, unsafe_allow_html=True)
 # --- HERO SECTION (Başlık Alanı) ---
 col1, col2 = st.columns([1, 4])
 with col1:
-    st.markdown("<h1 style='font-size: 60px; margin-bottom: 0;'>⛰️</h1>", unsafe_allow_html=True)
+    st.image("toporun_logo.png", use_container_width=True)
 with col2:
     st.markdown("<h1 style='color: #FC4C02; margin-bottom: 0;'>TOPORUN</h1>", unsafe_allow_html=True)
     st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>Üç Boyutlu Koşu Haritanı Oluştur</p>", unsafe_allow_html=True)
