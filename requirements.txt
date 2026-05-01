@@ -6,3 +6,5 @@ scipy
 trimesh
 plotly
 shapely
+mapbox-earcut
+networkx
