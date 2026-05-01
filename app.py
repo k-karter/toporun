@@ -9,24 +9,62 @@ import time
 import os
 import io
 import zipfile
+import urllib.request
 import plotly.graph_objects as go
+from PIL import Image, ImageDraw, ImageFont
 
-# --- SAYFA AYARLARI VE CSS ---
-st.set_page_config(page_title="Toporun | 3B Koşu Rotanız", page_icon="👟", layout="centered")
+# --- SAYFA AYARLARI ---
+st.set_page_config(page_title="Toporun | 3B Koşu Haritası Üreticisi", page_icon="👟", layout="centered")
 
 hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
             footer {visibility: hidden;}
             header {visibility: hidden;}
-            .stButton>button {
-                border-radius: 8px;
-                font-weight: bold;
-                border: 1px solid #FC4C02;
-            }
+            .stButton>button { border-radius: 8px; font-weight: bold; border: 1px solid #FC4C02; }
             </style>
             """
 st.markdown(hide_st_style, unsafe_allow_html=True)
+
+# --- ANA KATI MODEL ÖRÜCÜ MOTOR (REFACTOR EDİLDİ) ---
+def create_watertight_mesh(z_matrix, phys_x, phys_y):
+    """Verilen 2D matrisi, duvarlarıyla birlikte kapalı (watertight) bir 3B STL bloğuna çevirir."""
+    rows, cols = z_matrix.shape
+    x = np.linspace(0, phys_x, cols)
+    y = np.linspace(0, phys_y, rows)
+    X, Y = np.meshgrid(x, y)
+
+    vertices = []
+    for i in range(rows):
+        for j in range(cols):
+            vertices.append([X[i, j], Y[i, j], z_matrix[i, j]])
+    for i in range(rows):
+        for j in range(cols):
+            vertices.append([X[i, j], Y[i, j], 0.0])
+
+    faces = []
+    offset = rows * cols
+    for i in range(rows - 1):
+        for j in range(cols - 1):
+            v1, v2, v3, v4 = i*cols+j, i*cols+j+1, (i+1)*cols+j, (i+1)*cols+j+1
+            faces.extend([[v1, v2, v3], [v2, v4, v3]])
+            b1, b2, b3, b4 = offset+v1, offset+v2, offset+v3, offset+v4
+            faces.extend([[b1, b3, b2], [b2, b3, b4]])
+
+    for k in range(cols - 1):
+        n1, n2 = k, k + 1
+        s1, s2 = (rows-1)*cols+k, (rows-1)*cols+k+1
+        faces.extend([[n1, offset+n1, n2], [n2, offset+n1, offset+n2]])
+        faces.extend([[s1, s2, offset+s1], [s2, offset+s2, offset+s1]])
+    for i in range(rows - 1):
+        w1, w2 = i*cols, (i+1)*cols
+        e1, e2 = i*cols+cols-1, (i+1)*cols+cols-1
+        faces.extend([[w1, w2, offset+w1], [w2, offset+w2, offset+w1]])
+        faces.extend([[e1, offset+e1, e2], [e2, offset+e1, offset+e2]])
+
+    mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+    mesh.fix_normals()
+    return mesh
 
 # --- HERO SECTION ---
 col1, col2 = st.columns([1, 4])
@@ -34,7 +72,7 @@ with col1:
     st.image("toporun_logo.png", use_container_width=True)
 with col2:
     st.markdown("<h1 style='color: #FC4C02; margin-bottom: 0;'>TOPORUN</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>Başarını Ölümsüzleştir</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>3 Boyutlu Koşu Haritanızı Hazırlayın</p>", unsafe_allow_html=True)
 
 st.divider() 
 
@@ -52,7 +90,6 @@ if uploaded_file is not None:
     st.success("✅ Veri eşleşmesi başarılı. Rotanız işlemeye hazır.")
     
     if st.button("🚀 Toporun STL Üretimini Başlat", use_container_width=True):
-        
         with st.status("Diorama inşa ediliyor...", expanded=True) as status:
             try:
                 st.write("📍 GPX verileri ve sporcu istatistikleri ayrıştırılıyor...")
@@ -68,7 +105,7 @@ if uploaded_file is not None:
                 lat_max, lon_max = np.max(points, axis=0)
                 bbox = [lat_min-0.005, lon_min-0.005, lat_max+0.005, lon_max+0.005]
 
-                # --- İSTATİSTİK HESAPLAMA (Mesafe, Süre, Pace, Yükseklik) ---
+                # --- İSTATİSTİK HESAPLAMA ---
                 moving_data = gpx.get_moving_data()
                 up, down = gpx.get_uphill_downhill()
                 dist_km = moving_data.moving_distance / 1000
@@ -90,7 +127,7 @@ if uploaded_file is not None:
 
                 st.write(f"📊 İstatistikler Çıkarıldı: {dist_str} | {time_str} | Pace: {pace_str}")
 
-                # --- HARİTA ÜRETİMİ ---
+                # --- HARİTA MATRİSİ ---
                 st.write("📡 Uzaydan topografik veriler çekiliyor...")
                 grid_size = 30
                 lats = np.linspace(bbox[0], bbox[2], grid_size)
@@ -110,7 +147,7 @@ if uploaded_file is not None:
                         z_data_raw.extend([0] * len(locations[i:i+100]))
                     time.sleep(0.5)
 
-                st.write("⛰️ Zemin pürüzsüzleştiriliyor ve ölçekleniyor...")
+                st.write("⛰️ Zemin pürüzsüzleştiriliyor ve rotanız kabartılıyor...")
                 z_matrix = np.array(z_data_raw).reshape((grid_size, grid_size))
                 target_size = 100
                 z_matrix_high_res = zoom(z_matrix, target_size / grid_size, order=3)
@@ -134,75 +171,56 @@ if uploaded_file is not None:
                 thick_route = binary_dilation(route_mask, iterations=2)
                 z_matrix_scaled[thick_route] += ROTA_KABARTMA_MM
 
-                st.write("🧱 3B Katı Modeller (Harita ve Plaka) örülüyor...")
-                x = np.linspace(0, FIZIKSEL_X_Y_MM, target_size)
-                y = np.linspace(0, FIZIKSEL_X_Y_MM, target_size)
-                X, Y = np.meshgrid(x, y)
+                # Harita STL Üretimi
+                mesh = create_watertight_mesh(z_matrix_scaled, FIZIKSEL_X_Y_MM, FIZIKSEL_X_Y_MM)
 
-                vertices = []
-                for i in range(target_size):
-                    for j in range(target_size):
-                        vertices.append([X[i, j], Y[i, j], z_matrix_scaled[i, j]])
-                for i in range(target_size):
-                    for j in range(target_size):
-                        vertices.append([X[i, j], Y[i, j], 0.0])
-
-                faces = []
-                offset = target_size * target_size
-                for i in range(target_size - 1):
-                    for j in range(target_size - 1):
-                        v1, v2, v3, v4 = i*target_size+j, i*target_size+j+1, (i+1)*target_size+j, (i+1)*target_size+j+1
-                        faces.extend([[v1, v2, v3], [v2, v4, v3]])
-                        b1, b2, b3, b4 = offset+v1, offset+v2, offset+v3, offset+v4
-                        faces.extend([[b1, b3, b2], [b2, b3, b4]])
-
-                for k in range(target_size - 1):
-                    n1, n2 = k, k + 1
-                    s1, s2 = (target_size-1)*target_size+k, (target_size-1)*target_size+k+1
-                    faces.extend([[n1, offset+n1, n2], [n2, offset+n1, offset+n2]])
-                    faces.extend([[s1, s2, offset+s1], [s2, offset+s2, offset+s1]])
-                    w1, w2 = k*target_size, (k+1)*target_size
-                    e1, e2 = k*target_size+target_size-1, (k+1)*target_size+target_size-1
-                    faces.extend([[w1, w2, offset+w1], [w2, offset+w2, offset+w1]])
-                    faces.extend([[e1, offset+e1, e2], [e2, offset+e1, offset+e2]])
-
-                mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
-                mesh.fix_normals()
-
-                # --- İSTATİSTİK PLAKASI ÜRETİMİ ---
-                plate_w, plate_h, plate_d = 100.0, 30.0, 2.0
-                plate = trimesh.creation.box(extents=[plate_w, plate_h, plate_d])
-                plate.apply_translation([0, 0, plate_d/2])
+                # --- SIFIR HATA: PİKSEL-TABANLI İSTATİSTİK PLAKASI ---
+                st.write("🧱 İstatistikler 3B katı modele (Plakaya) dönüştürülüyor...")
+                
+                # Fontu indir
+                font_path = "Roboto-Bold.ttf"
+                if not os.path.exists(font_path):
+                    urllib.request.urlretrieve("https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Bold.ttf", font_path)
+                
+                plate_w, plate_h = 100.0, 30.0 # Plaka fiziksel boyutu (mm)
+                img_w, img_h = 300, 90 # Matris çözünürlüğü
+                
+                image = Image.new('L', (img_w, img_h), color=0)
+                draw = ImageDraw.Draw(image)
                 
                 try:
-                    import shapely
-                    text_str = f"Mesafe: {dist_str}  Sure: {time_str}\nPace: {pace_str}  Yukseklik: {elev_str}"
-                    text_mesh = trimesh.creation.text_3d(text_str, depth=1.5)
-                    
-                    # Metni plakanın ortasına hizalama ve ölçekleme
-                    text_mesh.apply_translation([-text_mesh.bounds[1][0]/2, -text_mesh.bounds[1][1]/2, 0])
-                    scale_factor = min((plate_w - 10) / text_mesh.extents[0], (plate_h - 10) / text_mesh.extents[1])
-                    matrix = np.eye(4)
-                    matrix[:3, :3] *= scale_factor
-                    text_mesh.apply_transform(matrix)
-                    
-                    text_mesh.apply_translation([0, 0, plate_d])
-                    plate_final = trimesh.util.concatenate([plate, text_mesh])
-                except Exception as e:
-                    plate_final = plate 
-                    st.warning(f"⚠️ Bulut sunucusunda 3B metin oluşturulamadı, düz plaka verildi. Hata Detayı: {e}")
+                    font = ImageFont.truetype(font_path, 20)
+                except:
+                    font = ImageFont.load_default()
+                
+                text_line1 = f"MESAFE: {dist_str}   SURE: {time_str}"
+                text_line2 = f"PACE: {pace_str}     YUKSEKLIK: {elev_str}"
+                
+                # Metni resme çiz
+                draw.text((15, 20), text_line1, font=font, fill=255)
+                draw.text((15, 55), text_line2, font=font, fill=255)
+                
+                # Resmi 3B Yükseklik Matrisine Çevir
+                text_matrix = np.array(image) > 128
+                text_matrix = np.flipud(text_matrix) # Kartezyen koordinata uydur
+                
+                plate_matrix = np.full((img_h, img_w), 2.0) # Zemin kalınlığı 2mm
+                plate_matrix[text_matrix] += 1.5 # Yazı kabartması +1.5mm
+                
+                # Plaka STL Üretimi (Haritayla aynı kusursuz mantık)
+                plate_mesh = create_watertight_mesh(plate_matrix, plate_w, plate_h)
 
                 # --- ZIP PAKETLEME SÜRECİ ---
                 st.write("📦 STL dosyaları ZIP arşivine dönüştürülüyor...")
                 map_bytes = mesh.export(file_type='stl')
-                plate_bytes = plate_final.export(file_type='stl')
+                plate_bytes = plate_mesh.export(file_type='stl')
                 
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
                     zip_file.writestr("toporun_harita.stl", map_bytes)
                     zip_file.writestr("toporun_istatistik_plakasi.stl", plate_bytes)
 
-                status.update(label="Üretim Tamamlandı!", state="complete", expanded=False)
+                status.update(label="Toporun Paketi Üretime Hazır!", state="complete", expanded=False)
                 st.balloons()
                 
                 # --- 3B İNTERAKTİF ÖNİZLEME ---
@@ -230,7 +248,7 @@ if uploaded_file is not None:
                 st.plotly_chart(fig, use_container_width=True)
 
                 # --- İNDİRME EKRANI (ZIP) ---
-                st.markdown("### 🎉 Üretime Hazır")
+                st.markdown("### 🎉 Baskıya Hazır")
                 dl_col1, dl_col2 = st.columns([1, 1])
                 with dl_col1:
                     st.download_button(
@@ -241,7 +259,7 @@ if uploaded_file is not None:
                         use_container_width=True
                     )
                 with dl_col2:
-                    st.info("💡 **Baskı İpucu:** Haritayı basarken rotanın yüksekliğinde, plakayı basarken ise metnin yüksekliğinde renk değişimi ekleyebilirsiniz.")
+                    st.info("💡 **Baskı İpucu:** Plakayı basarken, yazının başladığı yükseklikte (Z = 2.0mm) filamenti farklı bir renge çevirin.")
 
             except Exception as e:
                 status.update(label="Üretim sırasında bir hata oluştu.", state="error")
