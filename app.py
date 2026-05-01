@@ -10,7 +10,7 @@ import os
 import plotly.graph_objects as go # YENİ: 3B Önizleme Kütüphanesi
 
 # --- SAYFA AYARLARI VE CSS ENJEKSİYONU ---
-st.set_page_config(page_title="Toporun | 3B Harita Üreticisi", page_icon="⛰️", layout="centered")
+st.set_page_config(page_title="Toporun | 3B Koşu Haritası Üreticisi", page_icon="👟", layout="centered")
 
 hide_st_style = """
             <style>
@@ -32,13 +32,13 @@ with col1:
     st.image("toporun_logo.png", use_container_width=True)
 with col2:
     st.markdown("<h1 style='color: #FC4C02; margin-bottom: 0;'>TOPORUN</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>Başarı Dioraması Üreticisi</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>3 Boyutlu Koşu Rotası Üreticisi</p>", unsafe_allow_html=True)
 
 st.divider() 
 
 st.markdown("""
 **Koşu anılarını fiziksel bir sanat eserine dönüştür.**  
-Strava'dan indirdiğin `.gpx` dosyasını buraya bırak, Bambu Lab yazıcın için 
+Strava'dan indirdiğin `.gpx` dosyasını buraya bırak, 3 boyutlu yazıcın için 
 özel tasarlanmış 3B katı modelini (STL) saniyeler içinde hazırlayalım.
 """)
 
@@ -107,7 +107,7 @@ if uploaded_file is not None:
                     z_matrix_scaled = np.zeros_like(z_matrix_smoothed)
                 z_matrix_scaled += TABAN_KALINLIGI_MM
 
-                st.write("🏃‍♂️ Koşu rotanız dağların üzerine kabartılıyor...")
+                st.write("🏃‍♂️ Koşu rotanız yeryüzü üzerinde kabartılıyor...")
                 route_mask = np.zeros((target_size, target_size), dtype=bool)
                 for lat, lon in points:
                     lat_ratio = (lat - bbox[0]) / (bbox[2] - bbox[0])
@@ -176,7 +176,7 @@ if uploaded_file is not None:
                 fig = go.Figure(data=[go.Mesh3d(
                     x=px, y=py, z=pz,
                     i=i, j=j, k=k,
-                    color='#FC4C02', # Toporun Turuncusu
+                    color='#FFC48C', # Toporun Turuncusu
                     opacity=1.0,
                     lighting=dict(ambient=0.4, diffuse=0.8, roughness=0.1, specular=0.5, fresnel=0.2),
                     lightposition=dict(x=100, y=100, z=100)
@@ -212,7 +212,7 @@ if uploaded_file is not None:
                             use_container_width=True
                         )
                 with dl_col2:
-                    st.info("💡 **Bambu Studio İpucu:** Rotanın başladığı Z yüksekliğinde filament değişimini (pause) unutmayın.")
+                    st.info("💡 **Baskı İpucu:** Rotanın başladığı Z yüksekliğinde filament değişimi yaparak kontrast renk ile basabilirsiniz.")
                 
                 os.remove(stl_path)
 
