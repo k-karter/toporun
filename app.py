@@ -9,7 +9,7 @@ import time
 import os
 
 # --- SAYFA AYARLARI VE CSS ENJEKSİYONU ---
-st.set_page_config(page_title="Toporun | 3B Harita Üreticisi", page_icon="⛰️", layout="centered")
+st.set_page_config(page_title="Toporun | 3B Koşu Haritası", page_icon="👟", layout="centered")
 
 # Sağ üstteki varsayılan Streamlit menüsünü ve alt bilgiyi gizleyerek daha "App" gibi gösterelim
 hide_st_style = """
@@ -33,13 +33,13 @@ with col1:
     st.markdown("<h1 style='font-size: 60px; margin-bottom: 0;'>⛰️</h1>", unsafe_allow_html=True)
 with col2:
     st.markdown("<h1 style='color: #FC4C02; margin-bottom: 0;'>TOPORUN</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>Başarı Dioraması Üreticisi</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>Üç Boyutlu Koşu Haritanı Oluştur</p>", unsafe_allow_html=True)
 
 st.divider() # Estetik bir ayırıcı çizgi
 
 st.markdown("""
 **Koşu anılarını fiziksel bir sanat eserine dönüştür.**  
-Strava'dan indirdiğin `.gpx` dosyasını buraya bırak, Bambu Lab yazıcın için 
+Strava'dan indirdiğin `.gpx` dosyasını buraya bırak, 3 boyutlu yazıcın için 
 özel tasarlanmış 3B katı modelini (STL) saniyeler içinde hazırlayalım.
 """)
 
@@ -62,7 +62,7 @@ if uploaded_file is not None:
         # Eski spinner yerine çok daha modern olan ve adımları gösteren 'st.status' kullanıyoruz
         with st.status("Diorama inşa ediliyor...", expanded=True) as status:
             try:
-                st.write("📍 GPX koordinatları ayrıştırılıyor...")
+                st.write("📍 Koordinatlar ayrıştırılıyor...")
                 gpx = gpxpy.parse(uploaded_file)
                 points = []
                 for track in gpx.tracks:
@@ -110,7 +110,7 @@ if uploaded_file is not None:
                     z_matrix_scaled = np.zeros_like(z_matrix_smoothed)
                 z_matrix_scaled += TABAN_KALINLIGI_MM
 
-                st.write("🏃‍♂️ Koşu rotanız dağların üzerine kabartılıyor...")
+                st.write("🏃‍♂️ Koşu rotanız yeryüzü üzerine kabartılıyor...")
                 route_mask = np.zeros((target_size, target_size), dtype=bool)
                 for lat, lon in points:
                     lat_ratio = (lat - bbox[0]) / (bbox[2] - bbox[0])
@@ -122,7 +122,7 @@ if uploaded_file is not None:
                 thick_route = binary_dilation(route_mask, iterations=2)
                 z_matrix_scaled[thick_route] += ROTA_KABARTMA_MM
 
-                st.write("🧱 3B Katı Model (Watertight STL) örülüyor...")
+                st.write("🧱 3B Katı Model (STL) örülüyor...")
                 x = np.linspace(0, FIZIKSEL_X_Y_MM, target_size)
                 y = np.linspace(0, FIZIKSEL_X_Y_MM, target_size)
                 X, Y = np.meshgrid(x, y)
@@ -180,7 +180,7 @@ if uploaded_file is not None:
                             use_container_width=True
                         )
                 with dl_col2:
-                    st.info("💡 **İpucu:** Bambu Studio'da rotanın başladığı katmana renk değişimi (pause) eklemeyi unutmayın.")
+                    st.info("💡 **İpucu:** Yazıcınızın slicer programında rotanın başladığı katmana renk değişimi ekleyebilirsiniz.")
                 
                 os.remove(stl_path)
 
