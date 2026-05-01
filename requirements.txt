@@ -8,3 +8,4 @@ plotly
 shapely
 mapbox-earcut
 networkx
+Pillow
