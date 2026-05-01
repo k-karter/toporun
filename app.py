@@ -7,17 +7,16 @@ import trimesh
 import tempfile
 import time
 import os
+import plotly.graph_objects as go # YENİ: 3B Önizleme Kütüphanesi
 
 # --- SAYFA AYARLARI VE CSS ENJEKSİYONU ---
-st.set_page_config(page_title="Toporun | 3B Koşu Haritası", page_icon="👟", layout="centered")
+st.set_page_config(page_title="Toporun | 3B Harita Üreticisi", page_icon="⛰️", layout="centered")
 
-# Sağ üstteki varsayılan Streamlit menüsünü ve alt bilgiyi gizleyerek daha "App" gibi gösterelim
 hide_st_style = """
             <style>
             #MainMenu {visibility: hidden;}
             footer {visibility: hidden;}
             header {visibility: hidden;}
-            /* Butonları biraz daha köşeli ve modern yapalım */
             .stButton>button {
                 border-radius: 8px;
                 font-weight: bold;
@@ -33,13 +32,13 @@ with col1:
     st.image("toporun_logo.png", use_container_width=True)
 with col2:
     st.markdown("<h1 style='color: #FC4C02; margin-bottom: 0;'>TOPORUN</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>Üç Boyutlu Koşu Haritanı Oluştur</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>Başarı Dioraması Üreticisi</p>", unsafe_allow_html=True)
 
-st.divider() # Estetik bir ayırıcı çizgi
+st.divider() 
 
 st.markdown("""
 **Koşu anılarını fiziksel bir sanat eserine dönüştür.**  
-Strava'dan indirdiğin `.gpx` dosyasını buraya bırak, 3 boyutlu yazıcın için 
+Strava'dan indirdiğin `.gpx` dosyasını buraya bırak, Bambu Lab yazıcın için 
 özel tasarlanmış 3B katı modelini (STL) saniyeler içinde hazırlayalım.
 """)
 
@@ -50,7 +49,6 @@ TABAN_KALINLIGI_MM = 3.0
 ROTA_KABARTMA_MM = 3.0 
 
 # --- DOSYA YÜKLEME VE İŞLEM ALANI ---
-# Dosya yükleyiciyi estetik bir kutu (container) içine alıyoruz
 with st.container():
     uploaded_file = st.file_uploader("", type=["gpx"], help="Sadece GPX formatındaki koşu verileri desteklenir.")
 
@@ -59,10 +57,9 @@ if uploaded_file is not None:
     
     if st.button("🚀 Toporun STL Üretimini Başlat", use_container_width=True):
         
-        # Eski spinner yerine çok daha modern olan ve adımları gösteren 'st.status' kullanıyoruz
         with st.status("Diorama inşa ediliyor...", expanded=True) as status:
             try:
-                st.write("📍 Koordinatlar ayrıştırılıyor...")
+                st.write("📍 GPX koordinatları ayrıştırılıyor...")
                 gpx = gpxpy.parse(uploaded_file)
                 points = []
                 for track in gpx.tracks:
@@ -110,7 +107,7 @@ if uploaded_file is not None:
                     z_matrix_scaled = np.zeros_like(z_matrix_smoothed)
                 z_matrix_scaled += TABAN_KALINLIGI_MM
 
-                st.write("🏃‍♂️ Koşu rotanız yeryüzü üzerine kabartılıyor...")
+                st.write("🏃‍♂️ Koşu rotanız dağların üzerine kabartılıyor...")
                 route_mask = np.zeros((target_size, target_size), dtype=bool)
                 for lat, lon in points:
                     lat_ratio = (lat - bbox[0]) / (bbox[2] - bbox[0])
@@ -122,7 +119,7 @@ if uploaded_file is not None:
                 thick_route = binary_dilation(route_mask, iterations=2)
                 z_matrix_scaled[thick_route] += ROTA_KABARTMA_MM
 
-                st.write("🧱 3B Katı Model (STL) örülüyor...")
+                st.write("🧱 3B Katı Model (Watertight STL) örülüyor...")
                 x = np.linspace(0, FIZIKSEL_X_Y_MM, target_size)
                 y = np.linspace(0, FIZIKSEL_X_Y_MM, target_size)
                 X, Y = np.meshgrid(x, y)
@@ -161,14 +158,49 @@ if uploaded_file is not None:
                     mesh.export(tmpfile.name)
                     stl_path = tmpfile.name
 
-                # Status box'ı başarıyla kapat
                 status.update(label="Üretim Tamamlandı!", state="complete", expanded=False)
-                
                 st.balloons()
                 
-                # İndirme ve Sonraki Adımlar Ekranı
-                st.markdown("### 🎉 Modeliniz İndirilmeye Hazır")
+                # --- YENİ EKLENEN KISIM: 3B İNTERAKTİF ÖNİZLEME ---
+                st.markdown("### 🔍 Model Önizlemesi")
+                st.caption("Görseli farenizle döndürebilir ve yakınlaştırabilirsiniz.")
                 
+                # Plotly için koordinatları hazırlama
+                px = mesh.vertices[:, 0]
+                py = mesh.vertices[:, 1]
+                pz = mesh.vertices[:, 2]
+                i = mesh.faces[:, 0]
+                j = mesh.faces[:, 1]
+                k = mesh.faces[:, 2]
+
+                fig = go.Figure(data=[go.Mesh3d(
+                    x=px, y=py, z=pz,
+                    i=i, j=j, k=k,
+                    color='#FC4C02', # Toporun Turuncusu
+                    opacity=1.0,
+                    lighting=dict(ambient=0.4, diffuse=0.8, roughness=0.1, specular=0.5, fresnel=0.2),
+                    lightposition=dict(x=100, y=100, z=100)
+                )])
+                
+                # Arka planı şeffaf ve eksenleri gizli yapıyoruz (profesyonel görünüm)
+                fig.update_layout(
+                    scene=dict(
+                        xaxis=dict(visible=False),
+                        yaxis=dict(visible=False),
+                        zaxis=dict(visible=False),
+                        aspectratio=dict(x=1, y=1, z=0.25) # Z eksenini maket formuna uygun basık gösterir
+                    ),
+                    margin=dict(l=0, r=0, b=0, t=0),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    height=500
+                )
+
+                st.plotly_chart(fig, use_container_width=True)
+                # --------------------------------------------------
+
+                # İndirme Ekranı
+                st.markdown("### 🎉 Üretime Hazır")
                 dl_col1, dl_col2 = st.columns([1, 1])
                 with dl_col1:
                     with open(stl_path, "rb") as file:
@@ -180,7 +212,7 @@ if uploaded_file is not None:
                             use_container_width=True
                         )
                 with dl_col2:
-                    st.info("💡 **İpucu:** Yazıcınızın slicer programında rotanın başladığı katmana renk değişimi ekleyebilirsiniz.")
+                    st.info("💡 **Bambu Studio İpucu:** Rotanın başladığı Z yüksekliğinde filament değişimini (pause) unutmayın.")
                 
                 os.remove(stl_path)
 
