@@ -189,7 +189,8 @@ if uploaded_file is not None:
                     text_mesh.apply_translation([0, 0, plate_d])
                     plate_final = trimesh.util.concatenate([plate, text_mesh])
                 except Exception as e:
-                    plate_final = plate # Font veya kütüphane hatasında düz plaka verir
+                    plate_final = plate 
+                    st.warning(f"⚠️ Bulut sunucusunda 3B metin oluşturulamadı, düz plaka verildi. Hata Detayı: {e}")
 
                 # --- ZIP PAKETLEME SÜRECİ ---
                 st.write("📦 STL dosyaları ZIP arşivine dönüştürülüyor...")
