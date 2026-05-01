@@ -192,6 +192,7 @@ if uploaded_file is not None:
                     plate_final = plate # Font veya kütüphane hatasında düz plaka verir
 
                 # --- ZIP PAKETLEME SÜRECİ ---
+# --- ZIP PAKETLEME SÜRECİ ---
 st.write("📦 STL dosyaları ZIP arşivine dönüştürülüyor...")
 # Modellerin kendi export fonksiyonunu kullanarak veriyi doğrudan belleğe alıyoruz
 map_bytes = mesh.export(file_type='stl')
