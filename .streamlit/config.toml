@@ -1,0 +1,7 @@
+[theme]
+# Toporun Premium Dark Theme
+primaryColor = "#FC4C02" # Enerjik sportif turuncu (Strava tonu)
+backgroundColor = "#121212" # Derin antrasit/siyah arka plan
+secondaryBackgroundColor = "#1E1E1E" # Kartlar ve modüller için hafif gri
+textColor = "#FFFFFF" # Keskin beyaz metinler
+font = "sans serif" # Modern ve temiz font
