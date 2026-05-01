@@ -191,12 +191,11 @@ if uploaded_file is not None:
                 except Exception as e:
                     plate_final = plate # Font veya kütüphane hatasında düz plaka verir
 
-                # --- ZIP PAKETLEME SÜRECİ ---
-# --- ZIP PAKETLEME SÜRECİ ---
-st.write("📦 STL dosyaları ZIP arşivine dönüştürülüyor...")
-# Modellerin kendi export fonksiyonunu kullanarak veriyi doğrudan belleğe alıyoruz
-map_bytes = mesh.export(file_type='stl')
-plate_bytes = plate_final.export(file_type='stl')
+                        # --- ZIP PAKETLEME SÜRECİ ---
+                        st.write("📦 STL dosyaları ZIP arşivine dönüştürülüyor...")
+                        # Modellerin kendi export fonksiyonunu kullanarak veriyi doğrudan belleğe alıyoruz
+                        map_bytes = mesh.export(file_type='stl')
+                        plate_bytes = plate_final.export(file_type='stl')
                 
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
