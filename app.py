@@ -8,11 +8,40 @@ import tempfile
 import time
 import os
 
-# --- ARAYÜZ VE UYGULAMA AYARLARI ---
-st.set_page_config(page_title="Başarı Dioraması Üreticisi", page_icon="⛰️", layout="centered")
+# --- SAYFA AYARLARI VE CSS ENJEKSİYONU ---
+st.set_page_config(page_title="Toporun | 3B Harita Üreticisi", page_icon="⛰️", layout="centered")
 
-st.title("Başarı Dioraması Üreticisi 🏃‍♂️⛰️")
-st.markdown("Strava'dan indirdiğiniz **.gpx** dosyasını yükleyin, Bambu Lab yazıcınız için 3B basılabilir, rotası kabartılmış katı haritanızı saniyeler içinde oluşturalım.")
+# Sağ üstteki varsayılan Streamlit menüsünü ve alt bilgiyi gizleyerek daha "App" gibi gösterelim
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            /* Butonları biraz daha köşeli ve modern yapalım */
+            .stButton>button {
+                border-radius: 8px;
+                font-weight: bold;
+                border: 1px solid #FC4C02;
+            }
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
+
+# --- HERO SECTION (Başlık Alanı) ---
+col1, col2 = st.columns([1, 4])
+with col1:
+    st.markdown("<h1 style='font-size: 60px; margin-bottom: 0;'>⛰️</h1>", unsafe_allow_html=True)
+with col2:
+    st.markdown("<h1 style='color: #FC4C02; margin-bottom: 0;'>TOPORUN</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>Başarı Dioraması Üreticisi</p>", unsafe_allow_html=True)
+
+st.divider() # Estetik bir ayırıcı çizgi
+
+st.markdown("""
+**Koşu anılarını fiziksel bir sanat eserine dönüştür.**  
+Strava'dan indirdiğin `.gpx` dosyasını buraya bırak, Bambu Lab yazıcın için 
+özel tasarlanmış 3B katı modelini (STL) saniyeler içinde hazırlayalım.
+""")
 
 # Fiziksel Üretim Parametreleri
 FIZIKSEL_X_Y_MM = 120.0 
@@ -20,16 +49,20 @@ MAKSIMUM_Z_YUKSEKLIK_MM = 15.0
 TABAN_KALINLIGI_MM = 3.0 
 ROTA_KABARTMA_MM = 3.0 
 
-# Kullanıcıdan GPX dosyası alma
-uploaded_file = st.file_uploader("GPX Dosyanızı Sürükleyin veya Seçin", type=["gpx"])
+# --- DOSYA YÜKLEME VE İŞLEM ALANI ---
+# Dosya yükleyiciyi estetik bir kutu (container) içine alıyoruz
+with st.container():
+    uploaded_file = st.file_uploader("", type=["gpx"], help="Sadece GPX formatındaki koşu verileri desteklenir.")
 
 if uploaded_file is not None:
-    st.success("GPX Dosyası başarıyla okundu!")
+    st.success("✅ Veri eşleşmesi başarılı. Rotanız işlemeye hazır.")
     
-    if st.button("Dioramayı Oluştur (STL)"):
-        with st.spinner('Topografik veriler uydudan çekiliyor ve 3B harita örülüyor... Bu işlem 1-2 dakika sürebilir.'):
+    if st.button("🚀 Toporun STL Üretimini Başlat", use_container_width=True):
+        
+        # Eski spinner yerine çok daha modern olan ve adımları gösteren 'st.status' kullanıyoruz
+        with st.status("Diorama inşa ediliyor...", expanded=True) as status:
             try:
-                # 1. GPX Verisini Okuma
+                st.write("📍 GPX koordinatları ayrıştırılıyor...")
                 gpx = gpxpy.parse(uploaded_file)
                 points = []
                 for track in gpx.tracks:
@@ -44,7 +77,7 @@ if uploaded_file is not None:
                 pad = 0.005 
                 bbox = [lat_min-pad, lon_min-pad, lat_max+pad, lon_max+pad]
 
-                # 2. Topografik Veri Çekme
+                st.write("📡 Uzaydan topografik veriler çekiliyor...")
                 grid_size = 30
                 lats = np.linspace(bbox[0], bbox[2], grid_size)
                 lons = np.linspace(bbox[1], bbox[3], grid_size)
@@ -64,7 +97,7 @@ if uploaded_file is not None:
                         z_data_raw.extend([0] * len(locations[i:i+100]))
                     time.sleep(0.5)
 
-                # 3. Yüzey İşleme ve Milimetreye Ölçekleme
+                st.write("⛰️ Zemin pürüzsüzleştiriliyor ve ölçekleniyor...")
                 z_matrix = np.array(z_data_raw).reshape((grid_size, grid_size))
                 target_size = 100
                 z_matrix_high_res = zoom(z_matrix, target_size / grid_size, order=3)
@@ -75,10 +108,9 @@ if uploaded_file is not None:
                     z_matrix_scaled = (z_matrix_smoothed - z_min) / (z_max - z_min) * MAKSIMUM_Z_YUKSEKLIK_MM
                 else:
                     z_matrix_scaled = np.zeros_like(z_matrix_smoothed)
-                    
                 z_matrix_scaled += TABAN_KALINLIGI_MM
 
-                # 4. Rota Kabartma
+                st.write("🏃‍♂️ Koşu rotanız dağların üzerine kabartılıyor...")
                 route_mask = np.zeros((target_size, target_size), dtype=bool)
                 for lat, lon in points:
                     lat_ratio = (lat - bbox[0]) / (bbox[2] - bbox[0])
@@ -90,7 +122,7 @@ if uploaded_file is not None:
                 thick_route = binary_dilation(route_mask, iterations=2)
                 z_matrix_scaled[thick_route] += ROTA_KABARTMA_MM
 
-                # 5. Katı Mesh (Duvar Örme)
+                st.write("🧱 3B Katı Model (Watertight STL) örülüyor...")
                 x = np.linspace(0, FIZIKSEL_X_Y_MM, target_size)
                 y = np.linspace(0, FIZIKSEL_X_Y_MM, target_size)
                 X, Y = np.meshgrid(x, y)
@@ -125,25 +157,33 @@ if uploaded_file is not None:
                 mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
                 mesh.fix_normals()
 
-                # Geçici dosyaya kaydet
                 with tempfile.NamedTemporaryFile(delete=False, suffix=".stl") as tmpfile:
                     mesh.export(tmpfile.name)
                     stl_path = tmpfile.name
 
-                st.success("🎉 Başarılı! 3B Modeliniz hazırlandı.")
+                # Status box'ı başarıyla kapat
+                status.update(label="Üretim Tamamlandı!", state="complete", expanded=False)
+                
                 st.balloons()
                 
-                # İndirme Butonu
-                with open(stl_path, "rb") as file:
-                    st.download_button(
-                        label="STL Dosyasını İndir 📥",
-                        data=file,
-                        file_name="basari_haritasi.stl",
-                        mime="model/stl"
-                    )
+                # İndirme ve Sonraki Adımlar Ekranı
+                st.markdown("### 🎉 Modeliniz İndirilmeye Hazır")
                 
-                # Sunucuda yer kaplamaması için geçici dosyayı temizle
+                dl_col1, dl_col2 = st.columns([1, 1])
+                with dl_col1:
+                    with open(stl_path, "rb") as file:
+                        st.download_button(
+                            label="📥 STL Dosyasını İndir",
+                            data=file,
+                            file_name="toporun_diorama.stl",
+                            mime="model/stl",
+                            use_container_width=True
+                        )
+                with dl_col2:
+                    st.info("💡 **İpucu:** Bambu Studio'da rotanın başladığı katmana renk değişimi (pause) eklemeyi unutmayın.")
+                
                 os.remove(stl_path)
 
             except Exception as e:
-                st.error(f"Bir hata oluştu. Lütfen dosyanızın geçerli bir GPX olduğundan emin olun. Hata detayı: {e}")
+                status.update(label="Üretim sırasında bir hata oluştu.", state="error")
+                st.error(f"Lütfen dosyanızın geçerli bir GPX olduğundan emin olun. Detay: {e}")
