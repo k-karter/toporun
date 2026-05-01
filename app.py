@@ -192,9 +192,10 @@ if uploaded_file is not None:
                     plate_final = plate # Font veya kütüphane hatasında düz plaka verir
 
                 # --- ZIP PAKETLEME SÜRECİ ---
-                st.write("📦 STL dosyaları ZIP arşivine dönüştürülüyor...")
-                map_bytes = trimesh.exchange.export.export_mesh(mesh, file_type='stl')
-                plate_bytes = trimesh.exchange.export.export_mesh(plate_final, file_type='stl')
+st.write("📦 STL dosyaları ZIP arşivine dönüştürülüyor...")
+# Modellerin kendi export fonksiyonunu kullanarak veriyi doğrudan belleğe alıyoruz
+map_bytes = mesh.export(file_type='stl')
+plate_bytes = plate_final.export(file_type='stl')
                 
                 zip_buffer = io.BytesIO()
                 with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as zip_file:
