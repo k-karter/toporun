@@ -183,22 +183,48 @@ if uploaded_file is not None:
                     urllib.request.urlretrieve("https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Bold.ttf", font_path)
                 
                 plate_w, plate_h = 100.0, 30.0 # Plaka fiziksel boyutu (mm)
-                img_w, img_h = 300, 90 # Matris çözünürlüğü
+                # Daha net yazılar (yüksek çözünürlük) için piksel matrisini büyüttük
+                img_w, img_h = 400, 120 
                 
                 image = Image.new('L', (img_w, img_h), color=0)
                 draw = ImageDraw.Draw(image)
                 
-                try:
-                    font = ImageFont.truetype(font_path, 20)
-                except:
-                    font = ImageFont.load_default()
-                
                 text_line1 = f"MESAFE: {dist_str}   SURE: {time_str}"
                 text_line2 = f"PACE: {pace_str}     YUKSEKLIK: {elev_str}"
                 
-                # Metni resme çiz
-                draw.text((15, 20), text_line1, font=font, fill=255)
-                draw.text((15, 55), text_line2, font=font, fill=255)
+                # --- DİNAMİK ÖLÇEKLENDİRME VE ORTALAMA ALGORİTMASI ---
+                font_size = 40 # Başlangıç font boyutu
+                padding = 20 # Sağdan ve soldan bırakılacak güvenli boşluk (piksel)
+                
+                # Metnin piksel cinsinden genişlik ve yüksekliğini ölçen yardımcı fonksiyon
+                def get_text_dims(text, fnt):
+                    bbox = draw.textbbox((0, 0), text, font=fnt)
+                    return bbox[2] - bbox[0], bbox[3] - bbox[1]
+                
+                font = ImageFont.truetype(font_path, font_size)
+                w1, h1 = get_text_dims(text_line1, font)
+                w2, h2 = get_text_dims(text_line2, font)
+                
+                # Metin yatayda sığana kadar fontu küçült (Responsive Text)
+                while max(w1, w2) > (img_w - padding * 2) and font_size > 10:
+                    font_size -= 1
+                    font = ImageFont.truetype(font_path, font_size)
+                    w1, h1 = get_text_dims(text_line1, font)
+                    w2, h2 = get_text_dims(text_line2, font)
+                
+                # Y ekseninde (dikey) tam ortaya hizalama
+                line_spacing = font_size * 0.4
+                total_h = h1 + h2 + line_spacing
+                start_y = (img_h - total_h) / 2
+                
+                # X ekseninde (yatay) tam ortaya hizalama
+                x1 = (img_w - w1) / 2
+                x2 = (img_w - w2) / 2
+                
+                # Ortalanmış koordinatlara çizimi yap
+                draw.text((x1, start_y), text_line1, font=font, fill=255)
+                draw.text((x2, start_y + h1 + line_spacing), text_line2, font=font, fill=255)
+                # ---------------------------------------------------
                 
                 # Resmi 3B Yükseklik Matrisine Çevir
                 text_matrix = np.array(image) > 128
@@ -207,9 +233,9 @@ if uploaded_file is not None:
                 plate_matrix = np.full((img_h, img_w), 2.0) # Zemin kalınlığı 2mm
                 plate_matrix[text_matrix] += 1.5 # Yazı kabartması +1.5mm
                 
-                # Plaka STL Üretimi (Haritayla aynı kusursuz mantık)
+                # Plaka STL Üretimi
                 plate_mesh = create_watertight_mesh(plate_matrix, plate_w, plate_h)
-
+                
                 # --- ZIP PAKETLEME SÜRECİ ---
                 st.write("📦 STL dosyaları ZIP arşivine dönüştürülüyor...")
                 map_bytes = mesh.export(file_type='stl')
