@@ -135,11 +135,6 @@ if uploaded_file is not None:
     
     if st.button("🚀 Sihri Başlat", use_container_width=True):
 # ... [Önceki kodun geri kalanı (with st.status("Diorama inşa ediliyor...") ile başlayan kısımlar) TAMAMEN AYNI KALACAK] ...
-
-if uploaded_file is not None:
-    st.success("✅ Veri eşleşmesi başarılı. Sizin GPX veriniz, sizin rotanız.")
-    
-    if st.button("🚀 Dioramanı Gör (Anında Tatmin)", use_container_width=True):
         with st.status("Diorama inşa ediliyor...", expanded=True) as status:
             try:
                 st.write("📍 GPX verileri ve sporcu istatistikleri ayrıştırılıyor...")
