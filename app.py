@@ -13,103 +13,128 @@ import urllib.request
 import plotly.graph_objects as go
 from PIL import Image, ImageDraw, ImageFont
 
-# --- SAYFA AYARLARI VE CSS ---
-st.set_page_config(page_title="Toporun | Başarı Dioraması", page_icon="⛰️", layout="centered")
+# --- SAYFA AYARLARI VE ULTRA-MODERN CSS ---
+st.set_page_config(page_title="Toporun | Zaferini Masana Taşı", page_icon="⛰️", layout="centered")
 
-# Antrasit ve Neon Turuncu Temalı CSS
 custom_css = """
 <style>
+    /* Gereksiz Streamlit araçlarını gizle */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
     
-    /* Neon Turuncu Vurgular */
-    .stButton>button { 
-        border-radius: 4px; 
-        font-weight: bold; 
-        border: 2px solid #FC4C02; 
+    /* Vurucu Başlıklar ve Tipografi */
+    .hero-title {
+        font-size: 3.5rem;
+        font-weight: 900;
+        text-align: center;
         color: #FFFFFF;
-        background-color: transparent;
+        margin-top: -20px;
+        line-height: 1.2;
+        letter-spacing: -1px;
+    }
+    .hero-title span { color: #FC4C02; }
+    
+    .hero-subtitle {
+        font-size: 1.2rem;
+        text-align: center;
+        color: #A0A0A0;
+        margin-top: 10px;
+        margin-bottom: 40px;
+        font-weight: 400;
+    }
+    
+    /* Bilgi Kutucukları (Özellikler) */
+    .feature-box {
+        background-color: #1A1A1A;
+        padding: 20px;
+        border-radius: 16px;
+        text-align: center;
+        border: 1px solid #2A2A2A;
+        transition: transform 0.3s ease, border-color 0.3s ease;
+    }
+    .feature-box:hover {
+        transform: translateY(-5px);
+        border-color: #FC4C02;
+    }
+    .feature-icon { font-size: 2rem; margin-bottom: 10px; }
+    .feature-title { color: #FFFFFF; font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
+    .feature-desc { color: #888888; font-size: 0.9rem; }
+    
+    /* Buton Animasyonları */
+    .stButton>button { 
+        border-radius: 12px; 
+        font-weight: bold; 
+        font-size: 1.1rem;
+        padding: 15px 30px;
+        border: none; 
+        color: #FFFFFF;
+        background: linear-gradient(135deg, #FC4C02 0%, #D43F00 100%);
+        box-shadow: 0 4px 15px rgba(252, 76, 2, 0.3);
         transition: all 0.3s ease;
     }
     .stButton>button:hover {
-        background-color: #FC4C02;
-        color: #121212;
+        transform: scale(1.02);
+        box-shadow: 0 6px 20px rgba(252, 76, 2, 0.5);
     }
     
-    /* Paket Kartları İçin Estetik Sınırlar */
-    div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] {
-        background-color: #1E1E1E;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px solid #333333;
+    /* Dosya Yükleme Alanı Modifikasyonu */
+    [data-testid="stFileUploadDropzone"] {
+        background-color: #121212 !important;
+        border: 2px dashed #FC4C02 !important;
+        border-radius: 16px !important;
+        padding: 30px !important;
     }
-    
-    /* Vurgulu Metinler */
-    .highlight-orange { color: #FC4C02; font-weight: bold; }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
-# --- ANA KATI MODEL ÖRÜCÜ MOTOR ---
-def create_watertight_mesh(z_matrix, phys_x, phys_y):
-    rows, cols = z_matrix.shape
-    x = np.linspace(0, phys_x, cols)
-    y = np.linspace(0, phys_y, rows)
-    X, Y = np.meshgrid(x, y)
+# --- HERO SECTION (DEVASA VİTRİN) ---
+# Logoyu artık küçük bir ikon değil, devasa bir sinematik banner olarak kullanıyoruz
+st.image("toporun_logo.png", use_container_width=True)
 
-    vertices = []
-    for i in range(rows):
-        for j in range(cols):
-            vertices.append([X[i, j], Y[i, j], z_matrix[i, j]])
-    for i in range(rows):
-        for j in range(cols):
-            vertices.append([X[i, j], Y[i, j], 0.0])
+st.markdown("<div class='hero-title'>Zaferini <span>Masana Taşı</span></div>", unsafe_allow_html=True)
+st.markdown("<div class='hero-subtitle'>Ter döktüğün o rotayı, çekmecede bekleyen madalyanla birleştir.<br>Sadece GPX dosyanı at, gerisini sihire bırak! 🪄</div>", unsafe_allow_html=True)
 
-    faces = []
-    offset = rows * cols
-    for i in range(rows - 1):
-        for j in range(cols - 1):
-            v1, v2, v3, v4 = i*cols+j, i*cols+j+1, (i+1)*cols+j, (i+1)*cols+j+1
-            faces.extend([[v1, v2, v3], [v2, v4, v3]])
-            b1, b2, b3, b4 = offset+v1, offset+v2, offset+v3, offset+v4
-            faces.extend([[b1, b3, b2], [b2, b3, b4]])
+# --- 3 ADIMDA NASIL ÇALIŞIR? (Güven Veren Minimalist Kartlar) ---
+c1, c2, c3 = st.columns(3)
+with c1:
+    st.markdown("""
+    <div class='feature-box'>
+        <div class='feature-icon'>📍</div>
+        <div class='feature-title'>1. Rotanı Yükle</div>
+        <div class='feature-desc'>Strava veya saatinden indirdiğin GPX dosyasını sürükle.</div>
+    </div>
+    """, unsafe_allow_html=True)
+with c2:
+    st.markdown("""
+    <div class='feature-box'>
+        <div class='feature-icon'>⚡</div>
+        <div class='feature-title'>2. Önizlemeyi Gör</div>
+        <div class='feature-desc'>Saniyeler içinde rotanın 3 boyutlu halini ekranda çevir.</div>
+    </div>
+    """, unsafe_allow_html=True)
+with c3:
+    st.markdown("""
+    <div class='feature-box'>
+        <div class='feature-icon'>🏆</div>
+        <div class='feature-title'>3. Paketini Seç</div>
+        <div class='feature-desc'>İster dijital indirip kendin bas, ister boyalı sipariş et.</div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    for k in range(cols - 1):
-        n1, n2 = k, k + 1
-        s1, s2 = (rows-1)*cols+k, (rows-1)*cols+k+1
-        faces.extend([[n1, offset+n1, n2], [n2, offset+n1, offset+n2]])
-        faces.extend([[s1, s2, offset+s1], [s2, offset+s2, offset+s1]])
-    for i in range(rows - 1):
-        w1, w2 = i*cols, (i+1)*cols
-        e1, e2 = i*cols+cols-1, (i+1)*cols+cols-1
-        faces.extend([[w1, w2, offset+w1], [w2, offset+w2, offset+w1]])
-        faces.extend([[e1, offset+e1, e2], [e2, offset+e1, offset+e2]])
+st.write("")
+st.write("")
 
-    mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
-    mesh.fix_normals()
-    return mesh
+# --- DOSYA YÜKLEME ALANI ---
+uploaded_file = st.file_uploader("GPX Dosyanı Buraya Bırak", type=["gpx"])
 
-# --- HERO SECTION (VİTRİN) ---
-col1, col2 = st.columns([1, 4])
-with col1:
-    st.image("toporun_logo.png", use_container_width=True)
-with col2:
-    st.markdown("<h1 style='color: #FC4C02; margin-bottom: 0;'>TOPORUN</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size: 18px; color: #A0A0A0;'>Başarın Sadece Strava'da Kalmasın. Onu Masana Taşı.</p>", unsafe_allow_html=True)
-
-st.divider() 
-
-# Fiziksel Parametreler
-FIZIKSEL_X_Y_MM = 120.0 
-MAKSIMUM_Z_YUKSEKLIK_MM = 15.0 
-TABAN_KALINLIGI_MM = 3.0 
-ROTA_KABARTMA_MM = 3.0 
-
-# --- DOSYA YÜKLEME ---
-st.markdown("### 🏃‍♂️ Dijitalden Fiziğe İlk Adım")
-st.caption("Strava'dan indirdiğiniz .gpx dosyasını yükleyin. Uzaydan gelen SRTM verileriyle parkurunuzu saniyeler içinde inşa edelim.")
-uploaded_file = st.file_uploader("", type=["gpx"])
+if uploaded_file is not None:
+    # Alt kısımdaki eski yeşil success bar yerine daha zarif bir mesaj
+    st.info("🎯 Eşleşme başarılı! Hadi bu koşuyu ölümsüzleştirelim.")
+    
+    if st.button("🚀 Sihri Başlat", use_container_width=True):
+# ... [Önceki kodun geri kalanı (with st.status("Diorama inşa ediliyor...") ile başlayan kısımlar) TAMAMEN AYNI KALACAK] ...
 
 if uploaded_file is not None:
     st.success("✅ Veri eşleşmesi başarılı. Sizin GPX veriniz, sizin rotanız.")
