@@ -257,19 +257,43 @@ if uploaded_file is not None:
                 st.caption("Farenizle 360 derece döndürerek inceleyebilirsiniz.")
                 
                 px, py, pz = mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.vertices[:, 2]
-                i, j, k = mesh.faces[:, 0], mesh.faces[:, 1], mesh.faces[:, 2]
+                i_f, j_f, k_f = mesh.faces[:, 0], mesh.faces[:, 1], mesh.faces[:, 2]
+
+                # --- ÇİFT RENKLİ MATRİS BOYAMA (VERTEX COLORING) ---
+                vertex_colors = []
+                for x_val, y_val, z_val in mesh.vertices:
+                    # 3B uzaydaki X ve Y koordinatlarını tekrar 2D matris indekslerine çeviriyoruz
+                    col_idx = np.clip(int((x_val / FIZIKSEL_X_Y_MM) * (target_size - 1)), 0, target_size - 1)
+                    row_idx = np.clip(int((y_val / FIZIKSEL_X_Y_MM) * (target_size - 1)), 0, target_size - 1)
+                    
+                    # Nokta eğer rotanın üzerindeyse VE haritanın üst yüzeyindeyse (Z > 1.0)
+                    if thick_route[row_idx, col_idx] and z_val > 1.0:
+                        vertex_colors.append('#FC4C02') # Neon Strava Turuncusu
+                    else:
+                        vertex_colors.append('#354F2E') # Mat Topografik Yeşil
 
                 fig = go.Figure(data=[go.Mesh3d(
-                    x=px, y=py, z=pz, i=i, j=j, k=k,
-                    color='#FC4C02', opacity=1.0,
-                    lighting=dict(ambient=0.4, diffuse=0.8, roughness=0.1, specular=0.5, fresnel=0.2),
+                    x=px, y=py, z=pz, i=i_f, j=j_f, k=k_f,
+                    vertexcolor=vertex_colors, # Tek renk ataması yerine hesaplanan dinamik dizi
+                    opacity=1.0,
+                    # Plastik parlamasını (specular) kısıp, pürüzlülüğü (roughness) artırarak mat bir doku elde ediyoruz
+                    lighting=dict(ambient=0.4, diffuse=0.8, roughness=0.9, specular=0.1, fresnel=0.1),
                     lightposition=dict(x=100, y=100, z=100)
                 )])
                 
                 fig.update_layout(
-                    scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), aspectratio=dict(x=1, y=1, z=0.25)),
-                    margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=400
+                    scene=dict(
+                        xaxis=dict(visible=False), 
+                        yaxis=dict(visible=False), 
+                        zaxis=dict(visible=False), 
+                        aspectratio=dict(x=1, y=1, z=0.25)
+                    ),
+                    margin=dict(l=0, r=0, b=0, t=0), 
+                    paper_bgcolor='rgba(0,0,0,0)', 
+                    plot_bgcolor='rgba(0,0,0,0)', 
+                    height=450
                 )
+                
                 st.plotly_chart(fig, use_container_width=True)
                 st.divider()
 
