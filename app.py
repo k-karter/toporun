@@ -146,6 +146,7 @@ def create_watertight_mesh(z_matrix, phys_x, phys_y):
 st.image("toporun_logo.png", use_container_width=True)
 
 st.markdown("<div class='hero-title'>Topo<span>Run</span></div>", unsafe_allow_html=True)
+st.markdown("<div class='hero-title'>-<span>-</span></div>", unsafe_allow_html=True)
 st.markdown("<div class='hero-title'>Zaferini <span>Masana Taşı</span></div>", unsafe_allow_html=True)
 st.markdown("<div class='hero-subtitle'>Ter döktüğün o rotayı, çekmecede bekleyen madalyanla birleştir.<br>Sadece GPX dosyanı at, gerisini sihire bırak! 🪄</div>", unsafe_allow_html=True)
 
