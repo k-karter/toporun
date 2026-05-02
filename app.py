@@ -125,6 +125,12 @@ with c3:
 
 st.write("")
 st.write("")
+# --- FİZİKSEL PARAMETRELER (Geri Eklenen Kısım) ---
+FIZIKSEL_X_Y_MM = 120.0 
+MAKSIMUM_Z_YUKSEKLIK_MM = 15.0 
+TABAN_KALINLIGI_MM = 3.0 
+ROTA_KABARTMA_MM = 3.0 
+
 
 # --- DOSYA YÜKLEME ALANI ---
 uploaded_file = st.file_uploader("GPX Dosyanı Buraya Bırak", type=["gpx"])
