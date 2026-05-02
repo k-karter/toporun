@@ -14,7 +14,7 @@ import plotly.graph_objects as go
 from PIL import Image, ImageDraw, ImageFont
 
 # --- SAYFA AYARLARI VE ULTRA-MODERN CSS ---
-st.set_page_config(page_title="Toporun | Zaferini Masana Taşı", page_icon="⛰️", layout="centered")
+st.set_page_config(page_title="Toporun | Zaferin Masanda", page_icon="👟", layout="centered")
 
 custom_css = """
 <style>
