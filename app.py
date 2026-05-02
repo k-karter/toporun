@@ -145,6 +145,7 @@ def create_watertight_mesh(z_matrix, phys_x, phys_y):
 # --- HERO SECTION (DEVASA VİTRİN) ---
 st.image("toporun_logo.png", use_container_width=True)
 
+st.markdown("<div class='hero-title'>Topo<span>Run</span></div>", unsafe_allow_html=True)
 st.markdown("<div class='hero-title'>Zaferini <span>Masana Taşı</span></div>", unsafe_allow_html=True)
 st.markdown("<div class='hero-subtitle'>Ter döktüğün o rotayı, çekmecede bekleyen madalyanla birleştir.<br>Sadece GPX dosyanı at, gerisini sihire bırak! 🪄</div>", unsafe_allow_html=True)
 
@@ -368,15 +369,15 @@ if uploaded_file is not None:
                     with st.container():
                         st.markdown("<h3 style='text-align: center; color: #FC4C02;'>📦 Standart Paket</h3>", unsafe_allow_html=True)
                         st.markdown("<p style='text-align: center; font-size:14px; color:#A0A0A0;'>Kalite Arayanlar İçin</p>", unsafe_allow_html=True)
-                        st.markdown("* Yüksek Kalite Baskı.\n* Antrasit şasi, neon rota.\n* Ücretsiz Kargo.")
+                        st.markdown("* Yüksek Kalite Baskı.\n* Kabartılmış rota, hayal ettiğiniz gibi boyayın.\n* Hızlı Kargo.")
                 with c3:
                     with st.container():
                         st.markdown("<h3 style='text-align: center;'>🎨 Premium Paket</h3>", unsafe_allow_html=True)
                         st.markdown("<p style='text-align: center; font-size:14px; color:#A0A0A0;'>Koleksiyonerler İçin</p>", unsafe_allow_html=True)
-                        st.markdown("* El boyaması detaylar.\n* Sanatsal gölge.\n* Montajlı teslimat.")
+                        st.markdown("* El boyaması detaylar.\n* Sanatsal renklendirme.\n* Montajlı teslimat.")
 
                 st.write("")
-                paket_secimi = st.radio("Lütfen bir paket seçin:", ["Dijital Paket (Kendin Bas)", "Standart Paket (Fiziksel Ürün)", "Premium Paket (El Boyaması Eser)"], horizontal=True)
+                paket_secimi = st.radio("Lütfen bir paket seçin:", ["Dijital Paket (Kendin Bas)", "Standart Paket (Renksiz Fiziksel Ürün)", "Premium Paket (El Boyaması Eser)"], horizontal=True)
                 st.divider()
 
                 if "Dijital" in paket_secimi:
@@ -425,8 +426,8 @@ with sc1:
     <div style='margin-top: 20%;'>
         <h3 style='font-size: 2.2rem; font-weight: 800; color: #FFFFFF;'>Milimetrik Topografya,<br><span style='color: #FC4C02;'>Kusursuz Detay.</span></h3>
         <p style='color: #A0A0A0; font-size: 1.1rem; line-height: 1.6; margin-top: 15px;'>
-            Bambu Lab yazıcılarımızın 0.12mm katman hassasiyeti ve özel 'Ironing' (Ütüleme) teknolojisi ile dağların doğal teraslanmasını sağlıyoruz. 
-            Rotanız, mat antrasit tepelerin arasından tıpkı parlayan bir lav gibi yükseliyor.
+            3 boyutlu yazıcılarımızın yüksek katman hassasiyeti ve 'Ironing' (Ütüleme) teknolojisi ile dağların ölçekli yüksekliğini sağlıyoruz. 
+            Rotanız, tepelerin arasından tıpkı parlayan bir lav gibi yükseliyor.
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -448,8 +449,8 @@ with sc4:
     <div style='margin-top: 20%;'>
         <h3 style='font-size: 2.2rem; font-weight: 800; color: #FFFFFF;'>Modüler Şasi ve<br><span style='color: #FC4C02;'>75° Madalya Beşiği.</span></h3>
         <p style='color: #A0A0A0; font-size: 1.1rem; line-height: 1.6; margin-top: 15px;'>
-            Ağır döküm yarış madalyanız, özel olarak hesaplanmış 75 derecelik açıyla şasiye oturur ve haritanızın güneşi gibi parlar. 
-            Arka kısımdaki gizli kurdele tüneli, görsel karmaşaya son vererek sadece başarınıza odaklanmanızı sağlar.
+            Yarış madalyanız, hassas olarak hesaplanmış açıyla kaideye oturur ve haritanızın güneşi gibi parlar. 
+            Görsel karmaşaya son vererek sadece başarınıza odaklanmanızı sağlar.
         </p>
     </div>
     """, unsafe_allow_html=True)
@@ -465,7 +466,7 @@ with sc5:
     <div style='margin-top: 20%;'>
         <h3 style='font-size: 2.2rem; font-weight: 800; color: #FFFFFF;'>El İşçiliğiyle<br><span style='color: #FC4C02;'>Koleksiyonluk Eser.</span></h3>
         <p style='color: #A0A0A0; font-size: 1.1rem; line-height: 1.6; margin-top: 15px;'>
-            Premium paketimizle; ince fırçalarla uygulanan akrilik boyalar, sanatsal gölgelendirmeler (shading) 
+            Premium paketimizle; ince işçilikle uygulanan akrilik boyalar, gölgelendirmeler 
             ve gerçekçi doğa tonlarıyla 3B baskınızı müzeye layık bir koleksiyon objesine dönüştürüyoruz.
         </p>
     </div>
