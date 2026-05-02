@@ -85,18 +85,70 @@ custom_css = """
         border-radius: 16px !important;
         padding: 30px !important;
     }
+    
+    /* Paket Kartları İçin Estetik Sınırlar */
+    div[data-testid="stVerticalBlock"] div[data-testid="stVerticalBlock"] {
+        background-color: #1E1E1E;
+        padding: 15px;
+        border-radius: 8px;
+        border: 1px solid #333333;
+    }
 </style>
 """
 st.markdown(custom_css, unsafe_allow_html=True)
 
+# --- FİZİKSEL PARAMETRELER ---
+FIZIKSEL_X_Y_MM = 120.0 
+MAKSIMUM_Z_YUKSEKLIK_MM = 15.0 
+TABAN_KALINLIGI_MM = 3.0 
+ROTA_KABARTMA_MM = 3.0 
+
+# --- ANA KATI MODEL ÖRÜCÜ MOTOR ---
+def create_watertight_mesh(z_matrix, phys_x, phys_y):
+    rows, cols = z_matrix.shape
+    x = np.linspace(0, phys_x, cols)
+    y = np.linspace(0, phys_y, rows)
+    X, Y = np.meshgrid(x, y)
+
+    vertices = []
+    for i in range(rows):
+        for j in range(cols):
+            vertices.append([X[i, j], Y[i, j], z_matrix[i, j]])
+    for i in range(rows):
+        for j in range(cols):
+            vertices.append([X[i, j], Y[i, j], 0.0])
+
+    faces = []
+    offset = rows * cols
+    for i in range(rows - 1):
+        for j in range(cols - 1):
+            v1, v2, v3, v4 = i*cols+j, i*cols+j+1, (i+1)*cols+j, (i+1)*cols+j+1
+            faces.extend([[v1, v2, v3], [v2, v4, v3]])
+            b1, b2, b3, b4 = offset+v1, offset+v2, offset+v3, offset+v4
+            faces.extend([[b1, b3, b2], [b2, b3, b4]])
+
+    for k in range(cols - 1):
+        n1, n2 = k, k + 1
+        s1, s2 = (rows-1)*cols+k, (rows-1)*cols+k+1
+        faces.extend([[n1, offset+n1, n2], [n2, offset+n1, offset+n2]])
+        faces.extend([[s1, s2, offset+s1], [s2, offset+s2, offset+s1]])
+    for i in range(rows - 1):
+        w1, w2 = i*cols, (i+1)*cols
+        e1, e2 = i*cols+cols-1, (i+1)*cols+cols-1
+        faces.extend([[w1, w2, offset+w1], [w2, offset+w2, offset+w1]])
+        faces.extend([[e1, offset+e1, e2], [e2, offset+e1, offset+e2]])
+
+    mesh = trimesh.Trimesh(vertices=vertices, faces=faces)
+    mesh.fix_normals()
+    return mesh
+
 # --- HERO SECTION (DEVASA VİTRİN) ---
-# Logoyu artık küçük bir ikon değil, devasa bir sinematik banner olarak kullanıyoruz
 st.image("toporun_logo.png", use_container_width=True)
 
 st.markdown("<div class='hero-title'>Zaferini <span>Masana Taşı</span></div>", unsafe_allow_html=True)
 st.markdown("<div class='hero-subtitle'>Ter döktüğün o rotayı, çekmecede bekleyen madalyanla birleştir.<br>Sadece GPX dosyanı at, gerisini sihire bırak! 🪄</div>", unsafe_allow_html=True)
 
-# --- 3 ADIMDA NASIL ÇALIŞIR? (Güven Veren Minimalist Kartlar) ---
+# --- 3 ADIMDA NASIL ÇALIŞIR? ---
 c1, c2, c3 = st.columns(3)
 with c1:
     st.markdown("""
@@ -125,22 +177,14 @@ with c3:
 
 st.write("")
 st.write("")
-# --- FİZİKSEL PARAMETRELER (Geri Eklenen Kısım) ---
-FIZIKSEL_X_Y_MM = 120.0 
-MAKSIMUM_Z_YUKSEKLIK_MM = 15.0 
-TABAN_KALINLIGI_MM = 3.0 
-ROTA_KABARTMA_MM = 3.0 
-
 
 # --- DOSYA YÜKLEME ALANI ---
 uploaded_file = st.file_uploader("GPX Dosyanı Buraya Bırak", type=["gpx"])
 
 if uploaded_file is not None:
-    # Alt kısımdaki eski yeşil success bar yerine daha zarif bir mesaj
     st.info("🎯 Eşleşme başarılı! Hadi bu koşuyu ölümsüzleştirelim.")
     
     if st.button("🚀 Sihri Başlat", use_container_width=True):
-# ... [Önceki kodun geri kalanı (with st.status("Diorama inşa ediliyor...") ile başlayan kısımlar) TAMAMEN AYNI KALACAK] ...
         with st.status("Diorama inşa ediliyor...", expanded=True) as status:
             try:
                 st.write("📍 GPX verileri ve sporcu istatistikleri ayrıştırılıyor...")
@@ -277,97 +321,67 @@ if uploaded_file is not None:
                     zip_file.writestr("toporun_istatistik_plakasi.stl", plate_bytes)
 
                 status.update(label="Toporun Hazır!", state="complete", expanded=False)
+                st.balloons()
                 
-                # --- 3B İNTERAKTİF ÖNİZLEME ---
+                # --- 3B İNTERAKTİF ÖNİZLEME (ÇİFT RENKLİ) ---
                 st.markdown("### 🔍 Model Önizlemesi")
                 st.caption("Farenizle 360 derece döndürerek inceleyebilirsiniz.")
                 
                 px, py, pz = mesh.vertices[:, 0], mesh.vertices[:, 1], mesh.vertices[:, 2]
                 i_f, j_f, k_f = mesh.faces[:, 0], mesh.faces[:, 1], mesh.faces[:, 2]
 
-                # --- ÇİFT RENKLİ MATRİS BOYAMA (VERTEX COLORING) ---
                 vertex_colors = []
                 for x_val, y_val, z_val in mesh.vertices:
-                    # 3B uzaydaki X ve Y koordinatlarını tekrar 2D matris indekslerine çeviriyoruz
                     col_idx = np.clip(int((x_val / FIZIKSEL_X_Y_MM) * (target_size - 1)), 0, target_size - 1)
                     row_idx = np.clip(int((y_val / FIZIKSEL_X_Y_MM) * (target_size - 1)), 0, target_size - 1)
-                    
-                    # Nokta eğer rotanın üzerindeyse VE haritanın üst yüzeyindeyse (Z > 1.0)
                     if thick_route[row_idx, col_idx] and z_val > 1.0:
-                        vertex_colors.append('#FC4C02') # Neon Strava Turuncusu
+                        vertex_colors.append('#FC4C02') 
                     else:
-                        vertex_colors.append('#354F2E') # Mat Topografik Yeşil
+                        vertex_colors.append('#354F2E') 
 
                 fig = go.Figure(data=[go.Mesh3d(
                     x=px, y=py, z=pz, i=i_f, j=j_f, k=k_f,
-                    vertexcolor=vertex_colors, # Tek renk ataması yerine hesaplanan dinamik dizi
+                    vertexcolor=vertex_colors,
                     opacity=1.0,
-                    # Plastik parlamasını (specular) kısıp, pürüzlülüğü (roughness) artırarak mat bir doku elde ediyoruz
                     lighting=dict(ambient=0.4, diffuse=0.8, roughness=0.9, specular=0.1, fresnel=0.1),
                     lightposition=dict(x=100, y=100, z=100)
                 )])
                 
                 fig.update_layout(
-                    scene=dict(
-                        xaxis=dict(visible=False), 
-                        yaxis=dict(visible=False), 
-                        zaxis=dict(visible=False), 
-                        aspectratio=dict(x=1, y=1, z=0.25)
-                    ),
-                    margin=dict(l=0, r=0, b=0, t=0), 
-                    paper_bgcolor='rgba(0,0,0,0)', 
-                    plot_bgcolor='rgba(0,0,0,0)', 
-                    height=450
+                    scene=dict(xaxis=dict(visible=False), yaxis=dict(visible=False), zaxis=dict(visible=False), aspectratio=dict(x=1, y=1, z=0.25)),
+                    margin=dict(l=0, r=0, b=0, t=0), paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)', height=450
                 )
-                
                 st.plotly_chart(fig, use_container_width=True)
                 st.divider()
 
-                # --- YENİ E-TİCARET SATIŞ HUNİSİ (TIER CARDS) ---
+                # --- E-TİCARET SATIŞ HUNİSİ (TIER CARDS) ---
                 st.markdown("### 🛍️ Başarınızı Nasıl Sergilemek İstersiniz?")
                 st.caption("Kendi üretim kapasitenize veya estetik beklentinize uygun paketi seçin.")
                 
-                # 3 Kolonlu Paket Görünümü
                 c1, c2, c3 = st.columns(3)
-                
                 with c1:
                     with st.container():
                         st.markdown("<h3 style='text-align: center;'>💾 Dijital Paket</h3>", unsafe_allow_html=True)
                         st.markdown("<p style='text-align: center; font-size:14px; color:#A0A0A0;'>Maker Sporcular İçin</p>", unsafe_allow_html=True)
-                        st.markdown("""
-                        * Kendi yazıcınızda basın.
-                        * STL dosyaları (Harita & Plaka).
-                        * Anında Teslimat.
-                        """)
+                        st.markdown("* Kendi yazıcınızda basın.\n* STL dosyaları.\n* Anında Teslimat.")
                 with c2:
                     with st.container():
                         st.markdown("<h3 style='text-align: center; color: #FC4C02;'>📦 Standart Paket</h3>", unsafe_allow_html=True)
                         st.markdown("<p style='text-align: center; font-size:14px; color:#A0A0A0;'>Kalite Arayanlar İçin</p>", unsafe_allow_html=True)
-                        st.markdown("""
-                        * Bambu Lab Kalitesinde Baskı.
-                        * Antrasit şasi, neon rota.
-                        * Ücretsiz Kargo.
-                        """)
+                        st.markdown("* Yüksek Kalite Baskı.\n* Antrasit şasi, neon rota.\n* Ücretsiz Kargo.")
                 with c3:
                     with st.container():
                         st.markdown("<h3 style='text-align: center;'>🎨 Premium Paket</h3>", unsafe_allow_html=True)
                         st.markdown("<p style='text-align: center; font-size:14px; color:#A0A0A0;'>Koleksiyonerler İçin</p>", unsafe_allow_html=True)
-                        st.markdown("""
-                        * El boyaması detaylar.
-                        * Sanatsal gölgelendirme.
-                        * Tam montajlı teslimat.
-                        """)
+                        st.markdown("* El boyaması detaylar.\n* Sanatsal gölge.\n* Montajlı teslimat.")
 
                 st.write("")
                 paket_secimi = st.radio("Lütfen bir paket seçin:", ["Dijital Paket (Kendin Bas)", "Standart Paket (Fiziksel Ürün)", "Premium Paket (El Boyaması Eser)"], horizontal=True)
-
                 st.divider()
 
-                # Checkout / Teslimat Aksiyonları
                 if "Dijital" in paket_secimi:
                     st.success("Tasarımınız hazır! Aşağıdaki butondan ZIP dosyanızı indirebilirsiniz.")
                     st.download_button(label="📥 Dijital Paketi İndir (ZIP)", data=zip_buffer.getvalue(), file_name="toporun_diorama_seti.zip", mime="application/zip", use_container_width=True)
-                
                 elif "Standart" in paket_secimi or "Premium" in paket_secimi:
                     st.info(f"Seçtiğiniz paket: **{paket_secimi}**. Üretim sürecini başlatmak için lütfen teslimat bilgilerinizi girin.")
                     with st.form("siparis_formu"):
@@ -375,14 +389,11 @@ if uploaded_file is not None:
                         form_tel = st.text_input("Telefon Numarası")
                         form_adres = st.text_area("Tam Kargo Adresi")
                         form_not = st.text_input("Madalya Çapınız (Örn: 65mm) - Standart ölçü için boş bırakın")
-                        
                         siparis_ver = st.form_submit_button("Siparişi Tamamla", use_container_width=True)
-                        
                         if siparis_ver:
                             if form_ad and form_tel and form_adres:
-                                # Burada ileride bir veritabanı veya e-posta API'si (SendGrid vb.) tetiklenecek
                                 st.balloons()
-                                st.success(f"🎉 Teşekkürler {form_ad}! Siparişin başarıyla alındı. Üretim sürecine başlıyoruz, en kısa sürede seninle iletişime geçeceğiz.")
+                                st.success(f"🎉 Teşekkürler {form_ad}! Siparişin başarıyla alındı. Üretim sürecine başlıyoruz.")
                             else:
                                 st.error("Lütfen teslimat için ad, telefon ve adres alanlarını doldurunuz.")
 
