@@ -400,3 +400,85 @@ if uploaded_file is not None:
             except Exception as e:
                 status.update(label="Üretim sırasında bir hata oluştu.", state="error")
                 st.error(f"Lütfen dosyanızın geçerli bir GPX olduğundan emin olun. Detay: {e}")
+
+                # =====================================================================
+                # --- AŞAĞI KAYDIRDIKÇA AÇILAN SİNEMATİK ÜRÜN VİTRİNİ (SHOWCASE) ---
+                # =====================================================================
+
+                st.write("")
+                st.write("")
+                st.write("")
+                st.write("")
+                st.divider() # Uygulama alanı ile vitrini ayıran ince çizgi
+
+                # Vitrin Başlığı
+                st.markdown("""
+                <div style='text-align: center; margin-top: 40px; margin-bottom: 60px;'>
+                    <h2 style='font-size: 3rem; font-weight: 900; color: #FFFFFF;'>Sadece Bir Veri Değil,<br><span style='color: #FC4C02;'>Fiziksel Bir Anıt.</span></h2>
+                    <p style='color: #A0A0A0; font-size: 1.2rem;'>Toporun ekosisteminin gerçek dünyadaki karşılığını keşfedin.</p>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # 1. SATIR: Gerçek Baskı Görseli ve Açıklaması (Resim Sağda)
+                sc1, sc2 = st.columns([1, 1], gap="large")
+                with sc1:
+                    st.markdown("""
+                    <div style='margin-top: 20%;'>
+                        <h3 style='font-size: 2.2rem; font-weight: 800; color: #FFFFFF;'>Milimetrik Topografya,<br><span style='color: #FC4C02;'>Kusursuz Detay.</span></h3>
+                        <p style='color: #A0A0A0; font-size: 1.1rem; line-height: 1.6; margin-top: 15px;'>
+                            3D yazıcılarımızın 0.12mm katman hassasiyeti ve özel 'Ironing' (Ütüleme) teknolojisi ile dağların doğal teraslanmasını sağlıyoruz. 
+                            Rotanız, mat antrasit tepelerin arasından tıpkı parlayan bir lav gibi yükseliyor.
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with sc2:
+                    # Yer tutucu resim. Sonradan kendi gerçek baskı fotoğrafınla değiştireceksin.
+                    st.image("showcase_1.png", use_container_width=True)
+                
+                st.write("")
+                st.write("")
+                st.write("")
+                
+                # 2. SATIR: Modüler Şasi ve Madalya (Resim Solda)
+                sc3, sc4 = st.columns([1, 1], gap="large")
+                with sc3:
+                    # Yer tutucu resim. Sonradan CAD render fotoğrafınla değiştireceksin.
+                    st.image("showcase_2.png", use_container_width=True)
+                with sc4:
+                    st.markdown("""
+                    <div style='margin-top: 20%;'>
+                        <h3 style='font-size: 2.2rem; font-weight: 800; color: #FFFFFF;'>Modüler Şasi ve<br><span style='color: #FC4C02;'>75° Madalya Beşiği.</span></h3>
+                        <p style='color: #A0A0A0; font-size: 1.1rem; line-height: 1.6; margin-top: 15px;'>
+                            Ağır döküm yarış madalyanız, özel olarak hesaplanmış 75 derecelik açıyla şasiye oturur ve haritanızın güneşi gibi parlar. 
+                            Arka kısımdaki gizli kurdele tüneli, görsel karmaşaya son vererek sadece başarınıza odaklanmanızı sağlar.
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+                st.write("")
+                st.write("")
+                st.write("")
+
+                # 3. SATIR: Premium Boyalı Versiyon (Resim Sağda)
+                sc5, sc6 = st.columns([1, 1], gap="large")
+                with sc5:
+                    st.markdown("""
+                    <div style='margin-top: 20%;'>
+                        <h3 style='font-size: 2.2rem; font-weight: 800; color: #FFFFFF;'>El İşçiliğiyle<br><span style='color: #FC4C02;'>Koleksiyonluk Eser.</span></h3>
+                        <p style='color: #A0A0A0; font-size: 1.1rem; line-height: 1.6; margin-top: 15px;'>
+                            Premium paketimizle; ince fırçalarla uygulanan akrilik boyalar, sanatsal gölgelendirmeler (shading) 
+                            ve gerçekçi doğa tonlarıyla 3B baskınızı müzeye layık bir koleksiyon objesine dönüştürüyoruz.
+                        </p>
+                    </div>
+                    """, unsafe_allow_html=True)
+                with sc6:
+                    # Yer tutucu resim. Sonradan boyanmış model fotoğrafınla değiştireceksin.
+                    st.image("showcase_3.png", use_container_width=True)
+                
+                st.write("")
+                st.write("")
+                st.divider()
+
+                # En alta tatlı bir Call to Action (Yukarı yönlendirme)
+                st.markdown("<p style='text-align: center; color: #888888; font-size: 1rem;'>Kendi rotanızı görmek için sayfanın üst kısmına dönün ve GPX dosyanızı yükleyin 👆</p>", unsafe_allow_html=True)
+                st.write("")
